@@ -30,30 +30,13 @@ var rootCmd = &cobra.Command{
 -d - разделитель
 -s - показывать только строки с разделителями`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		scan := bufio.NewScanner(os.Stdin)
-		for scan.Scan() {
-			line := scan.Text()
-			words := strings.Split(line, string(cfg.Delimiter))
-			if cfg.SepOnly && len(words) == 1 {
-				continue
-			}
-
-			var out []string
-			if cfg.ShowAll {
-				out = words
-			} else {
-				for i := range words {
-					if _, ok := cfg.Fields[i+1]; ok {
-						out = append(out, words[i])
-					}
-				}
-			}
-
-			fmt.Println(strings.Join(out, "\t"))
-		}
-		if err := scan.Err(); err != nil {
+		r := bufio.NewReaderSize(os.Stdin, 1024*1024)
+		w := bufio.NewWriterSize(os.Stdout, 1024*1024)
+		err := Process(r, w, cfg)
+		if err != nil {
 			return err
 		}
+		_ = w.Flush()
 		return nil
 	},
 }
