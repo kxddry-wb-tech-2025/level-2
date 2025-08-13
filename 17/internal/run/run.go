@@ -2,11 +2,15 @@ package run
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 	"telnet/internal/config"
+	"telnet/internal/telnet"
 )
 
 func Run(opt *config.Options) error {
@@ -14,23 +18,15 @@ func Run(opt *config.Options) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer func() { cancel(); _ = conn.Close() }()
-
-	go func() {
-		if _, err := io.Copy(os.Stdout, conn); err != nil {
-			_, _ = fmt.Fprintln(os.Stderr, "read error:", err)
-			cancel()
+	defer conn.Close()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	cli := telnet.New(conn)
+	if err = cli.Run(ctx); err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil
 		}
-	}()
-
-	go func() {
-		if _, err := io.Copy(conn, os.Stdin); err != nil {
-			_, _ = fmt.Fprintln(os.Stderr, "read error:", err)
-			cancel()
-		}
-	}()
-
-	<-ctx.Done()
+		fmt.Fprintln(os.Stderr, "telnet run error:", err)
+	}
 	return nil
 }

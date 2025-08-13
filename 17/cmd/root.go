@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"strings"
 	"telnet/internal/config"
 	"telnet/internal/run"
 	"time"
@@ -24,6 +25,10 @@ var rootCmd = &cobra.Command{
 			return cmd.Usage()
 		}
 		opt.Address = args[0]
+
+		if strings.Index(opt.Address, ":") < 0 {
+			opt.Address += ":23"
+		}
 
 		return run.Run(&opt)
 	},
