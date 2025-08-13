@@ -1,15 +1,16 @@
 package cmd
 
 import (
+	"net"
 	"os"
-	"strconv"
-	"strings"
+	"telnet/internal/config"
+	"telnet/internal/run"
 	"time"
 
 	"github.com/spf13/cobra"
 )
 
-var opt Options
+var opt config.Options
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -23,19 +24,18 @@ var rootCmd = &cobra.Command{
 		if len(args) != 1 {
 			return cmd.Usage()
 		}
-		address := strings.Split(args[0], ":")
-		if len(address) != 2 {
+		if !checkAddress(args[0]) {
 			return cmd.Usage()
 		}
-		if n, err := strconv.Atoi(address[1]); err != nil {
-			return err
-		} else {
-			opt.Port = n
-		}
-		opt.Host = address[0]
+		opt.Address = args[0]
 
-		return nil
+		return run.Run(&opt)
 	},
+}
+
+func checkAddress(addr string) bool {
+	_, _, err := net.SplitHostPort(addr)
+	return err == nil
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -47,11 +47,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().DurationVar(&opt.Timeout, "timeout", time.Second*10, "Timeout")
-}
-
-type Options struct {
-	Timeout time.Duration
-	Host    string
-	Port    int
+	rootCmd.Flags().DurationVar(&opt.Timeout, "timeout", time.Second*10, "timeout")
 }
