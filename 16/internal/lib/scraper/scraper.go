@@ -98,7 +98,7 @@ func (s *Scraper) Start(ctx context.Context) error {
 
 		bots, contentType, err := s.downloader.Download(ctx, &u)
 		if err == nil && contentType != "" {
-			defer bots.Close()
+			defer func() { _ = bots.Close() }()
 			byteBots, err := io.ReadAll(bots)
 			if err == nil {
 				data, err := robotstxt.FromBytes(byteBots)
@@ -223,20 +223,16 @@ func (s *Scraper) processTask(ctx context.Context, task *models.Task) error {
 }
 
 func (s *Scraper) shouldFollowLink(parsedURL *url.URL) bool {
-	// 1. Skip non-HTTP(S) schemes
 	if parsedURL.Scheme != "" && parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 		return false
 	}
 
-	// 2. Normalize host for comparison
 	host := strings.ToLower(parsedURL.Host)
 	baseHost := strings.ToLower(s.baseDomain)
 
-	// 3. Internal links OR resource files
 	sameDomain := host == "" || host == baseHost
 	isStaticAsset := hasAnySuffix(parsedURL.Path, ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp")
 
-	// 4. wget -m generally grabs assets, but only follows HTML links in-domain
 	return sameDomain || isStaticAsset
 }
 
@@ -256,7 +252,6 @@ func (s *Scraper) shouldDownloadResource(parsedURL *url.URL) bool {
 func (s *Scraper) addTask(task *models.Task) {
 	key := s.canon(task.URL)
 
-	// Avoid queue blow-ups: don't enqueue if we've seen or already enqueued it.
 	if s.visited.Contains(key) || s.enqueued.Contains(key) {
 		return
 	}
@@ -265,9 +260,7 @@ func (s *Scraper) addTask(task *models.Task) {
 	s.wg.Add(1)
 	select {
 	case s.workQueue <- task:
-		// enqueued
 	default:
-		// queue full, drop and undo bookkeeping to avoid leaks
 		s.enqueued.Remove(key)
 		s.wg.Done()
 	}

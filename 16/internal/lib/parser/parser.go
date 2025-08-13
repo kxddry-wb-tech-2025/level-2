@@ -90,14 +90,12 @@ func (p *Parser) HTML(htm io.Reader, base *url.URL) ([]*url.URL, []models.Resour
 	}
 
 	parseSrcsetFast := func(s string) []string {
-		// srcset := comma-separated candidates; for each candidate, URL is up to first whitespace.
 		out := make([]string, 0, 4)
 		start := 0
 		for i := 0; i <= len(s); i++ {
 			if i == len(s) || s[i] == ',' {
 				part := strings.TrimSpace(s[start:i])
 				if part != "" {
-					// take up to first whitespace
 					j := -1
 					for k := 0; k < len(part); k++ {
 						switch part[k] {
@@ -119,23 +117,19 @@ func (p *Parser) HTML(htm io.Reader, base *url.URL) ([]*url.URL, []models.Resour
 		return out
 	}
 
-	// Iterative pre-order traversal (avoids deep recursion/function-call overhead)
 	for n := doc; n != nil; {
 		if n.Type == html.ElementNode {
-			switch n.Data { // tag names are lowercased by the parser
-			// Clickable document links
+			switch n.Data {
 			case "a", "area":
 				if v, ok := getAttr(n, "href"); ok {
 					addLink(resolve(v))
 				}
 
-			// External resources by href
 			case "link":
 				if v, ok := getAttr(n, "href"); ok {
 					addRes(resolve(v))
 				}
 
-			// Sources by src/srcset
 			case "img", "script", "iframe", "source", "audio", "video", "track", "embed", "input":
 				if v, ok := getAttr(n, "src"); ok {
 					addRes(resolve(v))
@@ -147,7 +141,6 @@ func (p *Parser) HTML(htm io.Reader, base *url.URL) ([]*url.URL, []models.Resour
 				}
 			}
 
-			// Inline CSS: only scan if it even contains url(
 			if v, ok := getAttr(n, "style"); ok && strings.Contains(v, "url(") {
 				for _, cssURL := range extractCSSURLs(v) {
 					addRes(resolve(cssURL))

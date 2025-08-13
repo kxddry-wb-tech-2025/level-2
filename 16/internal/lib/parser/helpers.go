@@ -109,7 +109,6 @@ func extractCSSURLs(s string) []string {
 		if raw != "" {
 			urls = append(urls, raw)
 		}
-		// search for next occurrence starting after the ')'
 		next := strings.Index(lower[end+1:], "url(")
 		if next == -1 {
 			break

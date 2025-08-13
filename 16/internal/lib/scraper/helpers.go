@@ -9,7 +9,7 @@ import (
 )
 
 func saveFile(url *url.URL, content io.ReadCloser, contentType, outputDir string) (string, error) {
-	defer content.Close()
+	defer func() { _ = content.Close() }()
 
 	full := parser.GenerateLocalPath(url, contentType, outputDir)
 
@@ -22,7 +22,7 @@ func saveFile(url *url.URL, content io.ReadCloser, contentType, outputDir string
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	_, err = io.Copy(file, content)
 	if err != nil {
 		return "", err

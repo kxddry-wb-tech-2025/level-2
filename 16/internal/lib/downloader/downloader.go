@@ -41,7 +41,6 @@ func (d *Downloader) Download(ctx context.Context, url *url.URL) (io.ReadCloser,
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		// Always close the body to avoid leaking connections when returning an error.
 		_ = resp.Body.Close()
 		return nil, "", fmt.Errorf("HTTP %s: status %d", url, resp.StatusCode)
 	}
