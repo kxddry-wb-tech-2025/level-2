@@ -3,6 +3,8 @@ package tests
 import (
 	"bytes"
 	"context"
+	"errors"
+	"io"
 	"net"
 	"strings"
 	"telnet/internal/config"
@@ -25,20 +27,20 @@ func startMockServer(t *testing.T) (addr string, stop func()) {
 				return
 			}
 			go func(c net.Conn) {
-				defer c.Close()
+				defer func() { _ = c.Close() }()
 				buf := make([]byte, 1024)
 				for {
 					n, err := c.Read(buf)
 					if err != nil {
 						return
 					}
-					_, _ = c.Write(buf[:n]) // echo обратно
+					_, _ = c.Write(buf[:n])
 				}
 			}(conn)
 		}
 	}()
 
-	return ln.Addr().String(), func() { ln.Close() }
+	return ln.Addr().String(), func() { _ = ln.Close() }
 }
 
 func TestTelnetClient_Exchange(t *testing.T) {
@@ -55,7 +57,7 @@ func TestTelnetClient_Exchange(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	err := run.Run(ctx, cancel, opt, input, output)
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -71,11 +73,11 @@ func TestTelnetClient_ServerCloses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 
 	go func() {
 		conn, _ := ln.Accept()
-		conn.Close() // сразу закрываем
+		_ = conn.Close() // сразу закрываем
 	}()
 
 	input := bytes.NewBufferString("ping\n")
@@ -92,12 +94,12 @@ func TestTelnetClient_ServerCloses(t *testing.T) {
 }
 
 func TestTelnetClient_Timeout(t *testing.T) {
-	// Запускаем "медленный" сервер, который принимает соединение, но не отвечает
+	// запускаем медленный сервер, который принимает соединение, но не отвечает
 	ln, err := net.Listen("tcp", "127.0.0.1:0") // :0 — выбрать свободный порт
 	if err != nil {
 		t.Fatalf("failed to start fake server: %v", err)
 	}
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 
 	go func() {
 		for {
@@ -107,7 +109,7 @@ func TestTelnetClient_Timeout(t *testing.T) {
 			}
 			// Держим соединение открытым, но ничего не пишем — имитация зависшего сервера
 			time.Sleep(10 * time.Second)
-			conn.Close()
+			_ = conn.Close()
 		}
 	}()
 

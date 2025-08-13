@@ -2,51 +2,71 @@ package run
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net"
-	"os"
 	"sync"
 	"telnet/internal/config"
+	"time"
 )
 
+// Run connects to the TCP server and relays data between stdin and stdout.
 func Run(ctx context.Context, cancel context.CancelFunc, opt *config.Options, in io.Reader, out io.Writer) error {
+	defer cancel()
+
 	conn, err := net.DialTimeout("tcp", opt.Address, opt.Timeout)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect to %s: %w", opt.Address, err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
-	var wg sync.WaitGroup
-	wg.Add(2)
+	ctxTimeout, cancelTimeout := context.WithTimeout(ctx, opt.Timeout)
+	defer cancelTimeout()
 
-	errCh := make(chan error, 1)
-	// Чтение из in → запись в сокет
+	go func() {
+		<-ctxTimeout.Done()
+		_ = conn.SetDeadline(time.Now())
+	}()
+
+	var (
+		wg    sync.WaitGroup
+		errCh = make(chan error, 2)
+	)
+
+	// server -> stdout
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if _, err := io.Copy(conn, in); err != nil && !errors.Is(err, io.EOF) {
-			fmt.Fprintln(os.Stderr, "write error:", err)
-			errCh <- err
-		}
-		// Закрываем write-часть, чтобы сервер понял, что данных больше не будет
-		if tcpConn, ok := conn.(*net.TCPConn); ok {
-			_ = tcpConn.CloseWrite()
+		buf := make([]byte, 32*1024)
+		for {
+			n, err := conn.Read(buf)
+			if n > 0 {
+				if _, werr := out.Write(buf[:n]); werr != nil {
+					errCh <- werr
+					return
+				}
+			}
+			if err != nil {
+				errCh <- err
+				return
+			}
 		}
 	}()
 
-	// Чтение из сокета → запись в out
+	// stdin -> server
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if _, err := io.Copy(out, conn); err != nil && !errors.Is(err, io.EOF) {
-			fmt.Fprintln(os.Stderr, "read error:", err)
+		if _, err := io.Copy(conn, in); err != nil && err != io.EOF {
 			errCh <- err
 		}
-		// Если сервер закрыл соединение — завершаем контекст
-		cancel()
+		if tcp, ok := conn.(*net.TCPConn); ok {
+			_ = tcp.CloseWrite()
+		} else {
+			_ = conn.Close()
+		}
 	}()
 
-	// Ждём либо завершения контекста, либо таймаута
 	done := make(chan struct{})
 	go func() {
 		wg.Wait()
@@ -54,17 +74,19 @@ func Run(ctx context.Context, cancel context.CancelFunc, opt *config.Options, in
 	}()
 
 	select {
-	case <-ctx.Done():
 	case <-done:
-	}
-
-	select {
-	case err, ok := <-errCh:
-		if ok && err != nil {
-			return err
+		close(errCh)
+		var firstErr error
+		for e := range errCh {
+			if e != nil && firstErr == nil {
+				firstErr = e
+			}
 		}
-	default:
+		return firstErr
+	case <-ctxTimeout.Done():
+		_ = conn.SetDeadline(time.Now())
+		_ = conn.Close()
+		wg.Wait()
+		return ctxTimeout.Err()
 	}
-
-	return nil
 }
