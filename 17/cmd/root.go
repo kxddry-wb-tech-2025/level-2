@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"net"
 	"os"
 	"telnet/internal/config"
 	"telnet/internal/run"
@@ -24,18 +23,10 @@ var rootCmd = &cobra.Command{
 		if len(args) != 1 {
 			return cmd.Usage()
 		}
-		if !checkAddress(args[0]) {
-			return cmd.Usage()
-		}
 		opt.Address = args[0]
 
 		return run.Run(&opt)
 	},
-}
-
-func checkAddress(addr string) bool {
-	_, _, err := net.SplitHostPort(addr)
-	return err == nil
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
