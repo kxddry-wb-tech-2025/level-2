@@ -4,6 +4,7 @@ import "time"
 
 // Config is a structure parsed in the config.yaml file
 type Config struct {
+	Env    string `yaml:"env" env-default:"local"` // local, dev, prod
 	Server server `yaml:"server"`
 }
 

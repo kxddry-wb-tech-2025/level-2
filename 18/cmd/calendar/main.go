@@ -4,11 +4,14 @@ import (
 	"calendar/internal/config"
 	"calendar/internal/handlers"
 	"calendar/internal/storage"
+	"fmt"
+	"net/http"
 
 	"calendar/internal/validator"
 
 	v10 "github.com/go-playground/validator/v10"
 	initCfg "github.com/kxddry/go-utils/pkg/config"
+	initLog "github.com/kxddry/go-utils/pkg/logger"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -16,6 +19,7 @@ import (
 func main() {
 	var cfg config.Config
 	initCfg.MustParseConfig(&cfg)
+	log := initLog.SetupLogger(cfg.Env)
 
 	st := storage.New()
 
@@ -33,4 +37,16 @@ func main() {
 
 	e.POST("/create_event", handlers.CreateEvent(st))
 	e.POST("/update_event", handlers.UpdateEvent(st))
+
+	srv := http.Server{
+		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
+		Handler:      e,
+		ReadTimeout:  cfg.Server.Timeout,
+		WriteTimeout: cfg.Server.Timeout,
+		IdleTimeout:  cfg.Server.IdleTimeout,
+	}
+
+	if err := srv.ListenAndServe(); err != nil {
+		log.Error(err.Error())
+	}
 }
