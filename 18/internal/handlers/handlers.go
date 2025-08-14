@@ -10,7 +10,7 @@ type Storage interface {
 	Create(userID int64, date time.Time, text string) *models.Event
 	Update(id int64, date time.Time, text string) (*models.Event, error)
 	Delete(id int64) error
-	GetDay(userID int64) ([]*models.Event, error)
-	GetWeek(userID int64) ([]*models.Event, error)
-	GetMonth(userID int64) ([]*models.Event, error)
+	GetDay(userID int64, date time.Time) ([]*models.Event, error)
+	GetWeek(userID int64, date time.Time) ([]*models.Event, error)
+	GetMonth(userID int64, date time.Time) ([]*models.Event, error)
 }

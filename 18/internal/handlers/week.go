@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -17,7 +18,12 @@ func EventsForWeek(st Storage) echo.HandlerFunc {
 			return c.String(http.StatusBadRequest, err.Error())
 		}
 
-		events, err := st.GetWeek(uid)
+		date, err := time.Parse("2006-01-02", c.QueryParam("date"))
+		if err != nil {
+			return c.String(http.StatusBadRequest, err.Error())
+		}
+
+		events, err := st.GetWeek(uid, date)
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
 				return c.String(http.StatusServiceUnavailable, err.Error())
