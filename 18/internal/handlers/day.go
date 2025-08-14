@@ -1,1 +1,33 @@
 package handlers
+
+import (
+	"calendar/internal/storage"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strconv"
+
+	"github.com/labstack/echo/v4"
+)
+
+func EventsForDay(st Storage) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		uid, err := strconv.ParseInt(c.QueryParam("uid"), 10, 64)
+		if err != nil {
+			return c.String(http.StatusBadRequest, err.Error())
+		}
+
+		events, err := st.GetDay(uid)
+		if err != nil {
+			if errors.Is(err, storage.ErrUserNotFound) {
+				return c.String(http.StatusServiceUnavailable, err.Error())
+			}
+			return c.String(http.StatusBadRequest, err.Error())
+		}
+		js, err := json.Marshal(events)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, js)
+	}
+}
