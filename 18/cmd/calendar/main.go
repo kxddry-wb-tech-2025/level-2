@@ -34,14 +34,14 @@ func main() {
 	e.Validator = validator.New(v10.New())
 
 	// POST
-	e.POST("/create_event", handlers.CreateEvent(st))
-	e.POST("/update_event", handlers.UpdateEvent(st))
-	e.POST("/delete_event", handlers.DeleteEvent(st))
+	e.POST("/create_event", handlers.CreateEvent(st, log))
+	e.POST("/update_event", handlers.UpdateEvent(st, log))
+	e.POST("/delete_event", handlers.DeleteEvent(st, log))
 
 	// GET
-	e.GET("/events_for_day", handlers.EventsForDay(st))
-	e.GET("/events_for_week", handlers.EventsForWeek(st))
-	e.GET("/events_for_month", handlers.EventsForMonth(st))
+	e.GET("/events_for_day", handlers.EventsForDay(st, log))
+	e.GET("/events_for_week", handlers.EventsForWeek(st, log))
+	e.GET("/events_for_month", handlers.EventsForMonth(st, log))
 
 	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{Timeout: cfg.Server.Timeout}))
 
