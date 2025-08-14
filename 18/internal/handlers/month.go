@@ -17,11 +17,18 @@ func EventsForMonth(st Storage, log *slog.Logger) echo.HandlerFunc {
 	const op = "handlers.EventsForMonth"
 	log = log.With(slog.String("op", op))
 	return func(c echo.Context) error {
-		uid, err := strconv.ParseInt(c.QueryParam("uid"), 10, 64)
+		uidStr := c.QueryParam("user_id")
+		if uidStr == "" {
+			log.Debug("case 0")
+			return c.JSON(http.StatusBadRequest, models.Response{Error: "user_id is empty"})
+		}
+
+		uid, err := strconv.ParseInt(uidStr, 10, 64)
 		if err != nil {
 			log.Debug("case 1", sl.Err(err))
 			return c.JSON(http.StatusBadRequest, models.Response{Error: err.Error()})
 		}
+
 		date, err := time.Parse("2006-01-02", c.QueryParam("date"))
 		if err != nil {
 			log.Debug("case 2", sl.Err(err))

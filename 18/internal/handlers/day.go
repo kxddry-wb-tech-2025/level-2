@@ -18,9 +18,10 @@ func EventsForDay(st Storage, log *slog.Logger) echo.HandlerFunc {
 	log = log.With(slog.String("op", op))
 
 	return func(c echo.Context) error {
-		uidStr := c.QueryParam("uid")
+		uidStr := c.QueryParam("user_id")
 		if uidStr == "" {
-			return c.JSON(http.StatusBadRequest, models.Response{Error: "uid is empty"})
+			log.Debug("case 0")
+			return c.JSON(http.StatusBadRequest, models.Response{Error: "user_id is empty"})
 		}
 
 		uid, err := strconv.ParseInt(uidStr, 10, 64)
