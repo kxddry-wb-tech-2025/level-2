@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"calendar/internal/models"
 	"calendar/internal/storage"
 	"encoding/json"
 	"errors"
@@ -22,25 +23,25 @@ func DeleteEvent(st Storage) echo.HandlerFunc {
 
 		data, err := io.ReadAll(body)
 		if err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 
 		var s deleteStruct
 		if err = json.Unmarshal(data, &s); err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 
 		if err = c.Validate(s); err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 
 		if err = st.Delete(s.ID); err != nil {
 			if errors.Is(err, storage.ErrEventNotFound) {
-				return c.String(http.StatusServiceUnavailable, "event not found")
+				return c.JSON(http.StatusServiceUnavailable, "event not found")
 			}
-			return c.String(http.StatusInternalServerError, err.Error())
+			return c.JSON(http.StatusInternalServerError, models.Response{Error: err})
 		}
 
-		return c.String(http.StatusOK, fmt.Sprintf("event with id %d deleted", s.ID))
+		return c.JSON(http.StatusOK, models.Response{Result: fmt.Sprintf("event with id %d deleted", s.ID)})
 	}
 }

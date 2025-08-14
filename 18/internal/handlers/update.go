@@ -17,30 +17,30 @@ func UpdateEvent(st Storage) echo.HandlerFunc {
 		defer func() { _ = body.Close() }()
 		data, err := io.ReadAll(body)
 		if err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 
 		var event models.Event
 		if err := json.Unmarshal(data, &event); err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 
 		if err := c.Validate(event); err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 
 		if event.ID == 0 {
-			return c.String(http.StatusBadRequest, "invalid event id")
+			return c.JSON(http.StatusBadRequest, models.Response{Error: errors.New("invalid event id")})
 		}
 
 		out, err := st.Update(event.ID, event.Date, event.Text)
 		if err != nil {
 			if errors.Is(err, storage.ErrEventNotFound) {
-				return c.String(http.StatusServiceUnavailable, "event not found")
+				return c.JSON(http.StatusServiceUnavailable, models.Response{Error: errors.New("event not found")})
 			}
-			return c.String(http.StatusInternalServerError, err.Error())
+			return c.JSON(http.StatusInternalServerError, models.Response{Error: err})
 		}
 
-		return c.JSON(http.StatusOK, out)
+		return c.JSON(http.StatusOK, models.Response{Result: out})
 	}
 }

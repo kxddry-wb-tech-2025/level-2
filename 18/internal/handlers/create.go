@@ -3,6 +3,7 @@ package handlers
 import (
 	"calendar/internal/models"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
@@ -16,24 +17,27 @@ func CreateEvent(st Storage) echo.HandlerFunc {
 
 		data, err := io.ReadAll(body)
 		if err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 
 		var event models.Event
 		if err := json.Unmarshal(data, &event); err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 
 		if err := c.Validate(event); err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 
 		if event.ID != 0 {
-			return c.String(http.StatusBadRequest, "you cannot set your own id, its assigned by the server")
+			return c.JSON(http.StatusBadRequest,
+				models.Response{
+					Error: errors.New("you cannot set your own id, its assigned by the server"),
+				})
 		}
 
 		out := st.Create(event.UserID, event.Date, event.Text)
 
-		return c.JSON(http.StatusOK, out)
+		return c.JSON(http.StatusOK, models.Response{Result: out})
 	}
 }

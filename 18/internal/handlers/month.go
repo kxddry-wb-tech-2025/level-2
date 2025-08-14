@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"calendar/internal/models"
 	"calendar/internal/storage"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -15,24 +15,20 @@ func EventsForMonth(st Storage) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uid, err := strconv.ParseInt(c.QueryParam("uid"), 10, 64)
 		if err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 		date, err := time.Parse("2006-01-02", c.QueryParam("date"))
 		if err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 
 		events, err := st.GetMonth(uid, date)
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
-				return c.String(http.StatusServiceUnavailable, err.Error())
+				return c.JSON(http.StatusServiceUnavailable, models.Response{Error: err})
 			}
-			return c.String(http.StatusBadRequest, err.Error())
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
-		js, err := json.Marshal(events)
-		if err != nil {
-			return c.String(http.StatusInternalServerError, err.Error())
-		}
-		return c.JSON(http.StatusOK, js)
+		return c.JSON(http.StatusOK, models.Response{Result: events})
 	}
 }
