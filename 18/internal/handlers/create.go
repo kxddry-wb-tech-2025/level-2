@@ -12,7 +12,7 @@ import (
 func CreateEvent(st Storage) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		body := c.Request().Body
-		defer body.Close()
+		defer func() { _ = body.Close() }()
 
 		data, err := io.ReadAll(body)
 		if err != nil {
