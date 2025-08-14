@@ -8,10 +8,13 @@ import (
 )
 
 var (
+	// ErrEventNotFound is used when an event the user is trying to access is not found
 	ErrEventNotFound = errors.New("event not found")
-	ErrUserNotFound  = errors.New("user not found")
+	// ErrUserNotFound is used when the user is not found
+	ErrUserNotFound = errors.New("user not found")
 )
 
+// Storage is a struct suitable for a calendar.
 type Storage struct {
 	byUser map[int64][]*models.Event
 	mp     map[int64]*models.Event
@@ -20,6 +23,7 @@ type Storage struct {
 	mu     *sync.RWMutex
 }
 
+// New initializes a new Storage
 func New() *Storage {
 	return &Storage{
 		byUser: make(map[int64][]*models.Event),
@@ -30,6 +34,7 @@ func New() *Storage {
 	}
 }
 
+// Create creates a new event
 func (s *Storage) Create(userID int64, date time.Time, text string) *models.Event {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -48,6 +53,7 @@ func (s *Storage) Create(userID int64, date time.Time, text string) *models.Even
 	return e
 }
 
+// Update updates an existing event and returns ErrEventNotFound if it wasn't found
 func (s *Storage) Update(id int64, date time.Time, text string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -67,6 +73,7 @@ func (s *Storage) Update(id int64, date time.Time, text string) error {
 	return nil
 }
 
+// Delete deletes an event and returns ErrEventNotFound if it was not found
 func (s *Storage) Delete(id int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -103,6 +110,7 @@ func (s *Storage) withFilter(userID int64, filter func(e *models.Event) bool) ([
 	return out, nil
 }
 
+// GetDay shows the events with the same day as requested
 func (s *Storage) GetDay(userID int64, date time.Time) ([]*models.Event, error) {
 	filter := func(e *models.Event) bool {
 		return e.Date.Day() == date.Day()
@@ -110,16 +118,18 @@ func (s *Storage) GetDay(userID int64, date time.Time) ([]*models.Event, error) 
 	return s.withFilter(userID, filter)
 }
 
+// GetMonth shows the events following the requested date within a month
 func (s *Storage) GetMonth(userID int64, date time.Time) ([]*models.Event, error) {
 	filter := func(e *models.Event) bool {
-		return e.UserID == userID && (e.Date.After(date) || e.Date.Day() == date.Day()) && e.Date.Sub(date) < time.Hour*24*30
+		return (e.Date.After(date) || e.Date.Day() == date.Day()) && e.Date.Sub(date) < time.Hour*24*30
 	}
 	return s.withFilter(userID, filter)
 }
 
+// GetYear shows the events following the requested date within a year
 func (s *Storage) GetYear(userID int64, date time.Time) ([]*models.Event, error) {
 	filter := func(e *models.Event) bool {
-		return e.UserID == userID && (e.Date.After(date) || e.Date.Equal(date)) && e.Date.Sub(date) < time.Hour*24*365
+		return (e.Date.After(date) || e.Date.Equal(date)) && e.Date.Sub(date) < time.Hour*24*365
 	}
 	return s.withFilter(userID, filter)
 }
