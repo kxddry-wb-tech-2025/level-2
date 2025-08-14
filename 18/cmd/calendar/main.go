@@ -35,11 +35,15 @@ func main() {
 	e.Use(middleware.BodyLimit("1M"))
 	e.Validator = validator.New(v10.New())
 
+	// POST
 	e.POST("/create_event", handlers.CreateEvent(st))
 	e.POST("/update_event", handlers.UpdateEvent(st))
 	e.POST("/delete_event", handlers.DeleteEvent(st))
+
+	// GET
 	e.GET("/events_for_day", handlers.EventsForDay(st))
 	e.GET("/events_for_week", handlers.EventsForWeek(st))
+	e.GET("/events_for_month", handlers.EventsForMonth(st))
 
 	srv := http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
