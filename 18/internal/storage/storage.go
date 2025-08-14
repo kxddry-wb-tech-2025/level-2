@@ -87,19 +87,40 @@ func (s *Storage) Delete(id int64) error {
 	return nil
 }
 
-func (s *Storage) GetDay(userID int64, date time.Time) ([]*models.Event, error) {
+func (s *Storage) withFilter(userID int64, filter func(e *models.Event) bool) ([]*models.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	if len(s.byUser[userID]) == 0 {
 		return nil, ErrUserNotFound
 	}
+
 	var out []*models.Event
 	for _, e := range s.byUser[userID] {
-		if e.Date.Equal(date) {
+		if filter(e) {
 			out = append(out, e)
 		}
 	}
 	return out, nil
+}
 
+func (s *Storage) GetDay(userID int64, date time.Time) ([]*models.Event, error) {
+	filter := func(e *models.Event) bool {
+		return e.Date.Day() == date.Day()
+	}
+	return s.withFilter(userID, filter)
+}
+
+func (s *Storage) GetMonth(userID int64, date time.Time) ([]*models.Event, error) {
+	filter := func(e *models.Event) bool {
+		return e.UserID == userID && (e.Date.After(date) || e.Date.Day() == date.Day()) && e.Date.Sub(date) < time.Hour*24*30
+	}
+	return s.withFilter(userID, filter)
+}
+
+func (s *Storage) GetYear(userID int64, date time.Time) ([]*models.Event, error) {
+	filter := func(e *models.Event) bool {
+		return e.UserID == userID && (e.Date.After(date) || e.Date.Equal(date)) && e.Date.Sub(date) < time.Hour*24*365
+	}
+	return s.withFilter(userID, filter)
 }
