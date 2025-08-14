@@ -2,6 +2,7 @@ package main
 
 import (
 	"calendar/internal/config"
+
 	initCfg "github.com/kxddry/go-utils/pkg/config"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"

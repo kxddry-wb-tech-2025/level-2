@@ -126,10 +126,10 @@ func (s *Storage) GetMonth(userID int64, date time.Time) ([]*models.Event, error
 	return s.withFilter(userID, filter)
 }
 
-// GetYear shows the events following the requested date within a year
-func (s *Storage) GetYear(userID int64, date time.Time) ([]*models.Event, error) {
+// GetWeek shows the events following the requested date within a week
+func (s *Storage) GetWeek(userID int64, date time.Time) ([]*models.Event, error) {
 	filter := func(e *models.Event) bool {
-		return (e.Date.After(date) || e.Date.Equal(date)) && e.Date.Sub(date) < time.Hour*24*365
+		return (e.Date.After(date) || e.Date.Equal(date)) && e.Date.Sub(date) < time.Hour*24*7
 	}
 	return s.withFilter(userID, filter)
 }
