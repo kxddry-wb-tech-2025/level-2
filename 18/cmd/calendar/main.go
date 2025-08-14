@@ -39,6 +39,7 @@ func main() {
 	e.POST("/update_event", handlers.UpdateEvent(st))
 	e.POST("/delete_event", handlers.DeleteEvent(st))
 	e.GET("/events_for_day", handlers.EventsForDay(st))
+	e.GET("/events_for_week", handlers.EventsForWeek(st))
 
 	srv := http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
