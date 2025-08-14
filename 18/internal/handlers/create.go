@@ -7,7 +7,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/kxddry/go-utils/pkg/logger/handlers/sl"
 	"github.com/labstack/echo/v4"

@@ -28,7 +28,7 @@ func EventsForMonth(st Storage, log *slog.Logger) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 
-		events, err := st.GetMonth(uid, date)
+		events, err := st.GetMonth(uid, models.Date(date))
 		if err != nil {
 			log.Debug("case 3", sl.Err(err))
 			if errors.Is(err, storage.ErrUserNotFound) {

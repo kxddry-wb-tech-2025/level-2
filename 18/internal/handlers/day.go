@@ -30,7 +30,7 @@ func EventsForDay(st Storage, log *slog.Logger) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
 		}
 
-		events, err := st.GetDay(uid, date)
+		events, err := st.GetDay(uid, models.Date(date))
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
 				log.Debug("case 3", sl.Err(err))
