@@ -4,10 +4,8 @@ import (
 	"calendar/internal/config"
 	"calendar/internal/handlers"
 	"calendar/internal/storage"
-	"fmt"
-	"net/http"
-
 	"calendar/internal/validator"
+	"fmt"
 
 	v10 "github.com/go-playground/validator/v10"
 	initCfg "github.com/kxddry/go-utils/pkg/config"
@@ -45,15 +43,9 @@ func main() {
 	e.GET("/events_for_week", handlers.EventsForWeek(st))
 	e.GET("/events_for_month", handlers.EventsForMonth(st))
 
-	srv := http.Server{
-		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
-		Handler:      e,
-		ReadTimeout:  cfg.Server.Timeout,
-		WriteTimeout: cfg.Server.Timeout,
-		IdleTimeout:  cfg.Server.IdleTimeout,
-	}
+	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{Timeout: cfg.Server.Timeout}))
 
-	if err := srv.ListenAndServe(); err != nil {
-		log.Error(err.Error())
+	if err := e.Start(fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)); err != nil {
+		log.Error("Failed to start server", "error", err)
 	}
 }
