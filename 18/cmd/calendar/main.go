@@ -2,6 +2,8 @@ package main
 
 import (
 	"calendar/internal/config"
+	"calendar/internal/handlers"
+	"calendar/internal/storage"
 
 	"calendar/internal/validator"
 
@@ -15,6 +17,8 @@ func main() {
 	var cfg config.Config
 	initCfg.MustParseConfig(&cfg)
 
+	st := storage.New()
+
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
@@ -26,4 +30,6 @@ func main() {
 
 	e.Use(middleware.BodyLimit("1M"))
 	e.Validator = validator.New(v10.New())
+
+	e.POST("/create_event", handlers.CreateEvent(st))
 }
