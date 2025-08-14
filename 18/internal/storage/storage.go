@@ -10,6 +10,7 @@ import (
 var (
 	// ErrEventNotFound is used when an event the user is trying to access is not found
 	ErrEventNotFound = errors.New("event not found")
+
 	// ErrUserNotFound is used when the user is not found
 	ErrUserNotFound = errors.New("user not found")
 )
@@ -54,13 +55,13 @@ func (s *Storage) Create(userID int64, date time.Time, text string) *models.Even
 }
 
 // Update updates an existing event and returns ErrEventNotFound if it wasn't found
-func (s *Storage) Update(id int64, date time.Time, text string) error {
+func (s *Storage) Update(id int64, date time.Time, text string) (*models.Event, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	e, ok := s.mp[id]
 	if !ok {
-		return ErrEventNotFound
+		return nil, ErrEventNotFound
 	}
 
 	e.Date = date
@@ -70,7 +71,7 @@ func (s *Storage) Update(id int64, date time.Time, text string) error {
 	s.byUser[uid][idx] = e
 	s.mp[id] = e
 
-	return nil
+	return e, nil
 }
 
 // Delete deletes an event and returns ErrEventNotFound if it was not found

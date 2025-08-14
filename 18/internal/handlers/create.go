@@ -28,6 +28,10 @@ func CreateEvent(st Storage) echo.HandlerFunc {
 			return c.String(http.StatusBadRequest, err.Error())
 		}
 
+		if event.ID != 0 {
+			return c.String(http.StatusBadRequest, "you cannot set your own id, its assigned by the server")
+		}
+
 		out := st.Create(event.UserID, event.Date, event.Text)
 
 		return c.JSON(http.StatusOK, out)

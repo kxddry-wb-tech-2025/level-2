@@ -32,4 +32,5 @@ func main() {
 	e.Validator = validator.New(v10.New())
 
 	e.POST("/create_event", handlers.CreateEvent(st))
+	e.POST("/update_event", handlers.UpdateEvent(st))
 }

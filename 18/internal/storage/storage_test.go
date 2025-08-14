@@ -35,7 +35,7 @@ func TestUpdate_HappyPath(t *testing.T) {
 	e := s.Create(1, date, "Initial")
 
 	newDate := date.Add(time.Hour * 24)
-	err := s.Update(e.ID, newDate, "Updated")
+	_, err := s.Update(e.ID, newDate, "Updated")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -46,7 +46,7 @@ func TestUpdate_HappyPath(t *testing.T) {
 	}
 
 	// Updating with same values
-	err = s.Update(e.ID, newDate, "Updated")
+	_, err = s.Update(e.ID, newDate, "Updated")
 	if err != nil {
 		t.Errorf("updating with same values should succeed, got %v", err)
 	}
@@ -54,7 +54,7 @@ func TestUpdate_HappyPath(t *testing.T) {
 
 func TestUpdate_NonHappyPath(t *testing.T) {
 	s := storage.New()
-	err := s.Update(999, time.Now(), "Fail")
+	_, err := s.Update(999, time.Now(), "Fail")
 	if !errors.Is(err, storage.ErrEventNotFound) {
 		t.Errorf("expected ErrEventNotFound, got %v", err)
 	}
