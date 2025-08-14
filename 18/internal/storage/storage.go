@@ -84,12 +84,15 @@ func (s *Storage) Delete(id int64) error {
 	uid := e.UserID
 	idx := s.idx[id]
 	last := len(s.byUser[uid]) - 1
-	s.byUser[uid][idx], s.byUser[uid][last] = s.byUser[uid][last], s.byUser[uid][idx]
-	s.idx[s.byUser[uid][last].ID] = idx
-	s.byUser[uid] = s.byUser[uid][:last]
+	lastID := s.byUser[uid][last].ID
 
-	delete(s.idx, id)
 	delete(s.mp, id)
+	delete(s.idx, id)
+
+	s.byUser[uid][idx], s.byUser[uid][last] = s.byUser[uid][last], s.byUser[uid][idx]
+	s.byUser[uid] = s.byUser[uid][:last]
+	s.idx[lastID] = idx
+
 	return nil
 }
 
