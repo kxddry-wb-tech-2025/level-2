@@ -3,7 +3,6 @@ package handlers
 import (
 	"calendar/internal/models"
 	"encoding/json"
-	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -22,25 +21,25 @@ func CreateEvent(st Storage, log *slog.Logger) echo.HandlerFunc {
 		data, err := io.ReadAll(body)
 		if err != nil {
 			log.Debug("case 1", sl.Err(err))
-			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err.Error()})
 		}
 
 		var event models.Event
 		if err := json.Unmarshal(data, &event); err != nil {
 			log.Debug("case 2", sl.Err(err))
-			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err.Error()})
 		}
 
 		if err := c.Validate(event); err != nil {
 			log.Debug("case 3", sl.Err(err))
-			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err.Error()})
 		}
 
 		if event.ID != 0 {
 			log.Debug("case 4", sl.Err(err))
 			return c.JSON(http.StatusBadRequest,
 				models.Response{
-					Error: errors.New("you cannot set your own id, its assigned by the server"),
+					Error: "you cannot set your own id, its assigned by the server",
 				})
 		}
 

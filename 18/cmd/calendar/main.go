@@ -3,9 +3,12 @@ package main
 import (
 	"calendar/internal/config"
 	"calendar/internal/handlers"
+	"calendar/internal/models"
 	"calendar/internal/storage"
 	"calendar/internal/validator"
 	"fmt"
+	"reflect"
+	"time"
 
 	v10 "github.com/go-playground/validator/v10"
 	initCfg "github.com/kxddry/go-utils/pkg/config"
@@ -21,6 +24,14 @@ func main() {
 
 	st := storage.New()
 
+	v := v10.New()
+	v.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+		if date, ok := field.Interface().(models.Date); ok {
+			return time.Time(date)
+		}
+		return nil
+	}, models.Date{})
+
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
@@ -31,7 +42,7 @@ func main() {
 	}))
 
 	e.Use(middleware.BodyLimit("1M"))
-	e.Validator = validator.New(v10.New())
+	e.Validator = validator.New(v)
 
 	// POST
 	e.POST("/create_event", handlers.CreateEvent(st, log))

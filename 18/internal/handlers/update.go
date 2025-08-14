@@ -22,33 +22,33 @@ func UpdateEvent(st Storage, log *slog.Logger) echo.HandlerFunc {
 		data, err := io.ReadAll(body)
 		if err != nil {
 			log.Debug("case 1", sl.Err(err))
-			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err.Error()})
 		}
 
 		var event models.Event
 		if err := json.Unmarshal(data, &event); err != nil {
 			log.Debug("case 2", sl.Err(err))
-			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err.Error()})
 		}
 
 		if err := c.Validate(event); err != nil {
 			log.Debug("case 3", sl.Err(err))
-			return c.JSON(http.StatusBadRequest, models.Response{Error: err})
+			return c.JSON(http.StatusBadRequest, models.Response{Error: err.Error()})
 		}
 
 		if event.ID == 0 {
 			log.Debug("no id / zero id", sl.Err(err))
-			return c.JSON(http.StatusBadRequest, models.Response{Error: errors.New("invalid event id")})
+			return c.JSON(http.StatusBadRequest, models.Response{Error: "invalid event id"})
 		}
 
 		out, err := st.Update(event.ID, event.Date, event.Text)
 		if err != nil {
 			if errors.Is(err, storage.ErrEventNotFound) {
 				log.Debug("case 4", sl.Err(err))
-				return c.JSON(http.StatusServiceUnavailable, models.Response{Error: errors.New("event not found")})
+				return c.JSON(http.StatusServiceUnavailable, models.Response{Error: "event not found"})
 			}
 			log.Debug("case 5", sl.Err(err))
-			return c.JSON(http.StatusInternalServerError, models.Response{Error: err})
+			return c.JSON(http.StatusInternalServerError, models.Response{Error: err.Error()})
 		}
 
 		return c.JSON(http.StatusOK, models.Response{Result: out})
