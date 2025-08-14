@@ -115,25 +115,34 @@ func (s *Storage) withFilter(userID int64, filter func(e *models.Event) bool) ([
 }
 
 // GetDay shows the events with the same day as requested
-func (s *Storage) GetDay(userID int64, date time.Time) ([]*models.Event, error) {
+func (s *Storage) GetDay(userID int64) ([]*models.Event, error) {
+	y, m, d := time.Now().Date()
 	filter := func(e *models.Event) bool {
-		return e.Date.Day() == date.Day()
+		yy, mm, dd := e.Date.Date()
+		diff := time.Date(yy, mm, dd, 0, 0, 0, 0, time.UTC).Sub(time.Date(y, m, d, 0, 0, 0, 0, time.UTC))
+		return diff <= time.Hour*24
 	}
 	return s.withFilter(userID, filter)
 }
 
 // GetMonth shows the events following the requested date within a month
-func (s *Storage) GetMonth(userID int64, date time.Time) ([]*models.Event, error) {
+func (s *Storage) GetMonth(userID int64) ([]*models.Event, error) {
+	y, m, d := time.Now().Date()
 	filter := func(e *models.Event) bool {
-		return (e.Date.After(date) || e.Date.Day() == date.Day()) && e.Date.Sub(date) < time.Hour*24*30
+		yy, mm, dd := e.Date.Date()
+		diff := time.Date(yy, mm, dd, 0, 0, 0, 0, time.UTC).Sub(time.Date(y, m, d, 0, 0, 0, 0, time.UTC))
+		return diff <= time.Hour*24*30
 	}
 	return s.withFilter(userID, filter)
 }
 
 // GetWeek shows the events following the requested date within a week
-func (s *Storage) GetWeek(userID int64, date time.Time) ([]*models.Event, error) {
+func (s *Storage) GetWeek(userID int64) ([]*models.Event, error) {
+	y, m, d := time.Now().Date()
 	filter := func(e *models.Event) bool {
-		return (e.Date.After(date) || e.Date.Equal(date)) && e.Date.Sub(date) < time.Hour*24*7
+		yy, mm, dd := e.Date.Date()
+		diff := time.Date(yy, mm, dd, 0, 0, 0, 0, time.UTC).Sub(time.Date(y, m, d, 0, 0, 0, 0, time.UTC))
+		return diff <= time.Hour*24*7
 	}
 	return s.withFilter(userID, filter)
 }

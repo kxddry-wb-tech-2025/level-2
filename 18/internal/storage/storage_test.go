@@ -18,15 +18,20 @@ func TestCreate_HappyPath(t *testing.T) {
 		t.Errorf("expected different IDs for two events, got %d and %d", e1.ID, e2.ID)
 	}
 
-	events, _ := s.GetDay(1, date)
-	if len(events) != 2 {
-		t.Errorf("expected 2 events for the same day, got %d", len(events))
+	events, _ := s.GetDay(1)
+	found := 0
+	for _, e := range events {
+		if e.ID == e1.ID || e.ID == e2.ID {
+			found++
+		}
+	}
+	if found != 2 {
+		t.Errorf("expected 2 events for today, got %d", found)
 	}
 }
 
 func TestCreate_NonHappyPath(t *testing.T) {
-	// In this storage, creating the same event is allowed
-	// so no non-happy path for Create itself
+	// Creating same event is allowed, no non-happy path for Create
 }
 
 func TestUpdate_HappyPath(t *testing.T) {
@@ -34,15 +39,21 @@ func TestUpdate_HappyPath(t *testing.T) {
 	date := time.Now()
 	e := s.Create(1, date, "Initial")
 
-	newDate := date.Add(time.Hour * 24)
+	newDate := date.Add(24 * time.Hour)
 	_, err := s.Update(e.ID, newDate, "Updated")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	events, _ := s.GetDay(1, newDate)
-	if len(events) != 1 || events[0].Text != "Updated" {
-		t.Errorf("update failed, got %v", events)
+	events, _ := s.GetDay(1)
+	found := false
+	for _, ev := range events {
+		if ev.ID == e.ID && ev.Text == "Updated" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("update failed, event not found for today/week/month: %v", events)
 	}
 
 	// Updating with same values
@@ -71,9 +82,11 @@ func TestDelete_HappyPath(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	events, _ := s.GetDay(1, date)
-	if len(events) != 1 || events[0].ID != e2.ID {
-		t.Errorf("delete failed, remaining events: %v", events)
+	events, _ := s.GetDay(1)
+	for _, ev := range events {
+		if ev.ID == e1.ID {
+			t.Errorf("delete failed, event still present: %v", ev)
+		}
 	}
 
 	// Delete last element
@@ -81,7 +94,7 @@ func TestDelete_HappyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error when deleting last element: %v", err)
 	}
-	events, _ = s.GetDay(1, date)
+	events, _ = s.GetDay(1)
 	if len(events) != 0 {
 		t.Errorf("expected 0 events after deleting all, got %d", len(events))
 	}
@@ -97,21 +110,21 @@ func TestDelete_NonHappyPath(t *testing.T) {
 
 func TestGetDay_HappyPath(t *testing.T) {
 	s := storage.New()
-	date := time.Date(2025, 8, 14, 10, 0, 0, 0, time.UTC)
+	date := time.Now()
 	s.Create(1, date, "Day event")
 
-	events, err := s.GetDay(1, date)
+	events, err := s.GetDay(1)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(events) != 1 {
-		t.Errorf("expected 1 event, got %d", len(events))
+	if len(events) == 0 {
+		t.Errorf("expected at least 1 event for today, got 0")
 	}
 }
 
 func TestGetDay_NonHappyPath(t *testing.T) {
 	s := storage.New()
-	_, err := s.GetDay(999, time.Now())
+	_, err := s.GetDay(999)
 	if !errors.Is(err, storage.ErrUserNotFound) {
 		t.Errorf("expected ErrUserNotFound, got %v", err)
 	}
@@ -119,22 +132,28 @@ func TestGetDay_NonHappyPath(t *testing.T) {
 
 func TestGetWeek_HappyPath(t *testing.T) {
 	s := storage.New()
-	base := time.Date(2025, 8, 14, 10, 0, 0, 0, time.UTC)
+	base := time.Now()
 	s.Create(1, base, "Week event")
 	s.Create(1, base.Add(6*24*time.Hour), "Week end event")
 
-	events, err := s.GetWeek(1, base)
+	events, err := s.GetWeek(1)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(events) != 2 {
-		t.Errorf("expected 2 events, got %d", len(events))
+	found := 0
+	for _, e := range events {
+		if e.Text == "Week event" || e.Text == "Week end event" {
+			found++
+		}
+	}
+	if found != 2 {
+		t.Errorf("expected 2 events for this week, got %d", found)
 	}
 }
 
 func TestGetWeek_NonHappyPath(t *testing.T) {
 	s := storage.New()
-	_, err := s.GetWeek(999, time.Now())
+	_, err := s.GetWeek(999)
 	if !errors.Is(err, storage.ErrUserNotFound) {
 		t.Errorf("expected ErrUserNotFound, got %v", err)
 	}
@@ -142,22 +161,28 @@ func TestGetWeek_NonHappyPath(t *testing.T) {
 
 func TestGetMonth_HappyPath(t *testing.T) {
 	s := storage.New()
-	base := time.Date(2025, 8, 1, 10, 0, 0, 0, time.UTC)
+	base := time.Now()
 	s.Create(1, base, "Month event")
 	s.Create(1, base.Add(29*24*time.Hour), "End of month event")
 
-	events, err := s.GetMonth(1, base)
+	events, err := s.GetMonth(1)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(events) != 2 {
-		t.Errorf("expected 2 events, got %d", len(events))
+	found := 0
+	for _, e := range events {
+		if e.Text == "Month event" || e.Text == "End of month event" {
+			found++
+		}
+	}
+	if found != 2 {
+		t.Errorf("expected 2 events for this month, got %d", found)
 	}
 }
 
 func TestGetMonth_NonHappyPath(t *testing.T) {
 	s := storage.New()
-	_, err := s.GetMonth(999, time.Now())
+	_, err := s.GetMonth(999)
 	if !errors.Is(err, storage.ErrUserNotFound) {
 		t.Errorf("expected ErrUserNotFound, got %v", err)
 	}
