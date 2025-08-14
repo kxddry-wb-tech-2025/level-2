@@ -8,7 +8,6 @@ import (
 )
 
 var (
-	ErrEventExists   = errors.New("event already exists")
 	ErrEventNotFound = errors.New("event not found")
 	ErrUserNotFound  = errors.New("user not found")
 )
